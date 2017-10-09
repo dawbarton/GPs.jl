@@ -53,13 +53,33 @@ export sqrdistance_dx2
 
 #--- Standard Euclidean metric
 
-mutable struct Euclidean{Nx, T, L <: Union{T, SVector{Nx, T}}} <: Metric{T}
+# FIXME: Fix this! Cannot infer T & L when L is constrained as a union
+mutable struct Euclidean{Nx, T, L} <: Metric{T}
     ℓ::L
 end
 
 export Euclidean
 
-sqrdistance(m::Euclidean, x1, x2) = sum(((x1 .- x2)./m.ℓ).^2)
+sqrdistance(metric::Euclidean, x1, x2) = sum(((x1 .- x2)./metric.ℓ).^2)
 
+function sqrdistance_dθ(metric::Euclidean{Nx, T, T} where {Nx, T}, x1, x2)
+    return SVector(-2*sum((x1 .- x2).^2)/metric.ℓ^3)
+end
+
+function sqrdistance_dθ(metric::Euclidean{Nx, T, L} where {Nx, T, L <: MVector{Nx, T}}, x1, x2)
+    return -2(x1 .- x2).^2./metric.ℓ.^3
+end
+
+function sqrdistance_dx1(metric::Euclidean, x1, x2)
+    return 2*(x1 .- x2)./metric.ℓ.^2
+end
+
+function sqrdistance_dx2(metric::Euclidean, x1, x2)
+    return -2*(x1 .- x2)./metric.ℓ.^2
+end
+
+sethyperparameters!(metric::Euclidean, θ) = (metric.ℓ .= θ)
+gethyperparameters(metric::Euclidean) = metric.ℓ
+hyperparametercount(metric::Euclidean) = length(metric.ℓ)
 
 end
