@@ -65,18 +65,18 @@ K(x_1, x_2) = \sigma_f^2\exp(d(x_1, x_2)/2)
 ```
 where ``d(x_1, x_2)`` is an appropriate squared distance metric.
 
-# Type parameters
-
-    `M <: Metric`: the type of metric used.
-    `Nx`: number of input dimensions.
-    `T <: Number`: the base number type used (can be inferred from σf).
-
 # Fields
 
     `metric::M`: the metric to be used.
     `σf::T`: the noise parameter.
+
+# Type parameters
+
+    `M <: Metric`: the type of metric used (can be inferred from metric).
+    `T <: Number`: the base number type used (can be inferred from σf).
+
 """
-mutable struct SqrExponential{M <: Metric, Nx, T <: Number} <: Kernel{T}
+mutable struct SqrExponential{M <: Metric, T <: Number} <: Kernel{T}
     metric::M
     σf::T
 end
