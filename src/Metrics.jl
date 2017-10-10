@@ -53,20 +53,20 @@ export sqrdistance_dx2
 
 #--- Standard Euclidean metric
 
-# FIXME: Fix this! Cannot infer T & L when L is constrained as a union
-mutable struct Euclidean{Nx, T, L} <: Metric{T}
-    ℓ::L
+mutable struct Euclidean{N, T} <: Metric{T}
+    ℓ::MVector{N, T}
 end
+Euclidean(ℓ::Union{SVector, Number}) = Euclidean(MVector(ℓ))
 
 export Euclidean
 
 sqrdistance(metric::Euclidean, x1, x2) = sum(((x1 .- x2)./metric.ℓ).^2)
 
-function sqrdistance_dθ(metric::Euclidean{Nx, T, T} where {Nx, T}, x1, x2)
-    return SVector(-2*sum((x1 .- x2).^2)/metric.ℓ^3)
+function sqrdistance_dθ(metric::Euclidean{1, T} where {T}, x1, x2)
+    return SVector(-2*sum((x1 .- x2).^2)/metric.ℓ[1]^3)
 end
 
-function sqrdistance_dθ(metric::Euclidean{Nx, T, L} where {Nx, T, L <: MVector{Nx, T}}, x1, x2)
+function sqrdistance_dθ(metric::Euclidean{N, T} where {N, T}, x1, x2)
     return -2(x1 .- x2).^2./metric.ℓ.^3
 end
 
