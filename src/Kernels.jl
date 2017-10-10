@@ -99,16 +99,16 @@ function covariance_dθ(kernel::SqrExponential, x1, x2, cov)
     return [dcov_dσf; dcov_dθ]
 end
 
-function covariance_dx(kernel::SqrExponential, x1, x2, cov)
+function covariance_dx1(kernel::SqrExponential, x1, x2, cov)
     # cov is the previously computed covariance
-    ds²dx = sqrdistance_dx(kernel.metric, x1, x2)
+    ds²dx = sqrdistance_dx1(kernel.metric, x1, x2)
     # Derivative w.r.t. x1 (chain rule)
     return -0.5*ds²dx*cov
 end
 
-function covariance_dy(kernel::SqrExponential, x1, x2, cov)
+function covariance_dx2(kernel::SqrExponential, x1, x2, cov)
     # cov is the previously computed covariance
-    ds²dy = sqrdistance_dy(kernel.metric, x1, x2)
+    ds²dy = sqrdistance_dx2(kernel.metric, x1, x2)
     # Derivative w.r.t. x2 (chain rule)
     return -0.5*ds²dy*cov
 end
