@@ -33,6 +33,7 @@ Convert the input to a vector of SVectors.
 toSVector(x::Vector{T}) where {T <: Number} = reinterpret(SVector{1, T}, x, (length(x),))
 toSVector(x::Vector{SVector{N, T}}) where {N, T <: Number} = x
 toSVector(x::Matrix{T}) where {T <: Number} = reinterpret(SVector{size(x, 1), T}, x, (size(x, 2),))
+toSVector(x::AbstractVector{T}) where {T <: Number} = [SVector{1}(el) for el in x] # catch-all for generators, etc
 
 export toSVector
 
