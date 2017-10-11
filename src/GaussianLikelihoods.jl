@@ -1,5 +1,6 @@
 module GaussianLikelihoods
 
+using ..GPs
 using ..Kernels
 using StaticArrays
 using DocStringExtensions
@@ -10,12 +11,12 @@ mutable struct GaussianLikelihood{T, NX, K <: Kernel{T}} <: AbstractGP{T}
     kernel::K # covariance function
     σn::T # additive noise (MVector so it remains mutable)
     x::Vector{SVector{NX, T}} # input data
-    y::Matrix{T} # output data (rows are individual observations)
+    y::Matrix{T} # output data (rows are individual samples)
     L::UpperTriangular{T, Matrix{T}} # Cholesky factors of the covariance matrix
     α::Matrix{T} # α = K⁻¹y
 
     function GaussianLikelihood(kernel::Kernel, σn::T, x::Vector{SVector{NX, T}}, y::Matrix{T}) where {NX, T <: Number}
-        n = length(x) # number of observations
+        n = length(x) # number of samples
         m = size(y, 2) # number of output dimension
         if n != size(y, 1)
             throw(DimensionMismatch("The number of samples in x and y must match (i.e. length(x) == size(y, 1))"))
@@ -28,12 +29,14 @@ mutable struct GaussianLikelihood{T, NX, K <: Kernel{T}} <: AbstractGP{T}
                                    Matrix{T}(n, m)) # α = K⁻¹y
         # Copy data to avoid unexpected problems in bad user code later
         gp.x .= x
-        gp.y .= y
+        gp.y .= y' # assume we given samples as columns
         # Update with the specified hyperparameters/observations
         update!(gp)
         return gp
     end
 end
+
+GaussianLikelihood(kernel::Kernel{T}, σn::T, x, y) where {T} = GaussianLikelihood(kernel, σn, toSVector(x), toMatrix(y))
 
 const GP = GaussianLikelihood
 
@@ -72,24 +75,26 @@ end
 
 import Base: mean, var, cov
 
-function mean(gp::GaussianLikelihood, x)
-    Kₛ = covariance(gp.k, toSVector(x), gp.x)
+function mean(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
+    Kₛ = covariance_matrix(gp.kernel, x, gp.x)
     return Kₛ*gp.α
 end
 
-function var(gp::GaussianLikelihood, x)
-    xᵥ = asvecvec(x)
-    Kₛ = covariance(gp.k, gp.x, xᵥ)
+mean(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
+
+function var(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
+    Kₛ = covariance_matrix(gp.kernel, gp.x, x)
     v = gp.L' \ Kₛ
-    Kₛₛ = [covariance(gp.k, xᵢ, xᵢ) for xᵢ in xᵥ]
+    Kₛₛ = [covariance(gp.kernel, xᵢ, xᵢ) for xᵢ in x]
     return Kₛₛ - vec(sum(v.*v, 1)) + gp.σn^2
 end
 
-function covariance(gp::GaussianLikelihood, x)
-    xᵥ = asvecvec(x)
-    Kₛ = covariance(gp.k, gp.x, xᵥ)
+var(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
+
+function cov(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
+    Kₛ = covariance_matrix(gp.kernel, gp.x, x)
     v = gp.L' \ Kₛ
-    Kₛₛ = covariance(gp.k, xᵥ)
+    Kₛₛ = covariance_metrix(gp.kernel, x)
     Kₚ = Kₛₛ - v'*v
     for i in diagind(Kₚ)
         Kₚ[i] += gp.σn^2
@@ -97,6 +102,6 @@ function covariance(gp::GaussianLikelihood, x)
     return Kₚ
 end
 
-
+cov(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
 
 end

@@ -23,9 +23,26 @@ end
 
 export sethyperparameters!, gethyperparameters, hyperparametercount
 
+#--- Data conversion routines
+
 """
 $(SIGNATURES)
 
-Convert a vector to a vector of SVectors.
+Convert the input to a vector of SVectors.
 """
-toSVector(x::Vector{T}) where {T <: Number} = reinterpret(Vector{SVector{1, T}}, x)
+toSVector(x::Vector{T}) where {T <: Number} = reinterpret(SVector{1, T}, x, (length(x),))
+toSVector(x::Vector{SVector{N, T}}) where {N, T <: Number} = x
+toSVector(x::Matrix{T}) where {T <: Number} = reinterpret(SVector{size(x, 1), T}, x, (size(x, 2),))
+
+export toSVector
+
+"""
+$(SIGNATURES)
+
+Convert the input to a Matrix.
+"""
+toMatrix(x::Vector{T}) where {T <: Number} = reinterpret(T, x, (1, length(x)))
+toMatrix(x::Vector{SVector{N, T}}) where {N, T <: Number} = reinterpret(T, x, (N, length(x)))
+toMatrix(x::Matrix{T}) where {T <: Number} = x
+
+export toMatrix
