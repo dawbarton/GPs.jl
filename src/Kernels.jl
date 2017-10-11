@@ -62,7 +62,9 @@ export covariance_dy
 """
 $(SIGNATURES)
 
-Constructs a covariance matrix inplace using the specified kernel.
+Constructs a covariance matrix inplace of x with respect to itself using the
+specified kernel. K can either be UpperTriangular (where appropriate for speed)
+or a full matrix.
 """
 function covariance_matrix!(K::UpperTriangular, kernel::Kernel, x)
     for j in 1:length(x)
@@ -88,6 +90,12 @@ function covariance_matrix!(K::AbstractMatrix, kernel::Kernel, x)
     return K
 end
 
+"""
+$(SIGNATURES)
+
+Constructs a covariance matrix inplace of x1 with respect to x2 using the
+specified kernel. K is a full matrix.
+"""
 function covariance_matrix!(K::AbstractMatrix, kernel::Kernel, x1, x2)
     for j in 1:length(x2)
         for i in 1:length(x1)
@@ -100,9 +108,15 @@ end
 """
 $(SIGNATURES)
 
-Returns a covariance matrix built using the specified kernel.
+Returns a covariance matrix of x with respect to itself using the specified kernel.
 """
 covariance_matrix(kernel::Kernel, x::AbstractVector{T}) where {T <: AbstractVector{S}} where {S <: Number} = covariance_matrix!(Matrix{S}(length(x), length(x)), kernel, x)
+
+"""
+$(SIGNATURES)
+
+Returns a covariance matrix of x1 with respect to x2 using the specified kernel.
+"""
 covariance_matrix(kernel::Kernel, x1::AbstractVector{T}, x2::AbstractVector{T}) where {T <: AbstractVector{S}} where {S <: Number} = covariance_matrix!(Matrix{S}(length(x1), length(x2)), kernel, x1, x2)
 
 export covariance_matrix, covariance_matrix!
