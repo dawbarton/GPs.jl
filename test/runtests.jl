@@ -19,7 +19,7 @@ using StaticArrays
         @test x == [1 2 3]
         @test isa(x, Matrix)
     end
-    
+
 end
 
 @testset "Metric tests" begin
@@ -166,4 +166,20 @@ end
     μ2 = mean(gp2, xx)
     @test μ2[1, :] == μ2[2, :]
     @test μ2[1:1, :] ≈ μ₀
+
+    # Test likelihood calculations
+    x = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+    y = [0.107533 0.675794 0.136016 0.981452 1.01481 0.738462 0.864338 0.877542 1.30346 0.862904 -0.269977 0.297968 -0.442704 -0.821628 -0.808108 -1.04099 -0.975885 -0.511077 -0.305978 -0.0255785 0.134299; -0.241497 0.452465 0.913832 0.906796 1.158 1.14538 0.890368 0.867791 0.430329 0.486696 -0.229414 -0.522791 -0.749685 -1.39787 -0.66338 -0.934962 -1.10204 -0.534957 -0.930089 -0.329465 -0.0482894]
+    σn = 0.1
+    σf = 0.1
+    ℓ = 0.2
+
+    iso = GPs.Metrics.Euclidean(ℓ)
+    sqrexp = GPs.Kernels.SqrExponential(iso, σf)
+    GP = GPs.GaussianLikelihoods.GaussianLikelihood
+
+    @test round(loglikelihood(GP(sqrexp, σn, x, y[1, :])), 2) ≈ round(136.272815830685, 2)
+    @test round(loglikelihood(GP(sqrexp, σn, x, y[2, :])), 2) ≈ round(132.426903505274, 2)
+    @test round(loglikelihood(GP(sqrexp, σn, x, y)), 2) ≈ round(mean([136.272815830685, 132.426903505274]), 2)
+
 end

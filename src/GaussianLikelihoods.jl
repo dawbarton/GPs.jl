@@ -5,7 +5,8 @@ using ..Kernels
 using StaticArrays
 using DocStringExtensions
 
-import ..GPs: sethyperparameters!, gethyperparameters, hyperparametercount
+import ..GPs: sethyperparameters!, gethyperparameters, hyperparametercount,
+    optimizehyperparameters!, loglikelihood
 
 mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     kernel::K # covariance function
@@ -82,7 +83,7 @@ Return the mean of the Gaussian Process at the specified points.
 """
 function mean(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, x, gp.x)
-    return At_mul_Bt(gp.α, Kₛ)
+    return At_mul_Bt(gp.α, Kₛ) # (Kₛ*α)ᵀ
 end
 
 mean(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
@@ -118,5 +119,16 @@ function cov(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
 end
 
 cov(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
+
+#--- Likelihoods
+
+function loglikelihood(gp::GaussianLikelihood)
+    # log likelihood of the GP itself (w.r.t. the hyperparameters)
+    n = length(gp.x)
+    # log(det(K))
+    logdetK = sum(log.(diag(gp.L)))
+    # The log likelihood
+    lik = 0.5mean(sum(gp.y.*gp.α, 1)) + logdetK + 0.5n*log(2π)
+end
 
 end

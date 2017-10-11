@@ -21,7 +21,15 @@ Return the number of hyper parameters an object has.
 function hyperparametercount
 end
 
-export sethyperparameters!, gethyperparameters, hyperparametercount
+function optimizehyperparameters!
+end
+
+function loglikelihood
+end
+
+
+export sethyperparameters!, gethyperparameters, hyperparametercount,
+    optimizehyperparameters!, loglikelihood
 
 #--- Data conversion routines
 
