@@ -1,3 +1,6 @@
+using StaticArrays
+using DocStringExtensions
+
 #--- Generic functions used by multiple types
 
 """
@@ -19,3 +22,10 @@ function hyperparametercount
 end
 
 export sethyperparameters!, gethyperparameters, hyperparametercount
+
+"""
+$(SIGNATURES)
+
+Convert a vector to a vector of SVectors.
+"""
+toSVector(x::Vector{T}) where {T <: Number} = reinterpret(Vector{SVector{1, T}}, x)

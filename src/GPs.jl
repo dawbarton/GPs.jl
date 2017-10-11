@@ -5,14 +5,6 @@ A general purpose Gaussian Process implementation for Julia.
 """
 module GPs
 
-using StaticArrays
-using DocStringExtensions
-
-include("utils.jl")
-include("Metrics.jl")
-include("Kernels.jl")
-
-
 #--- Gaussian Processes
 
 """
@@ -21,9 +13,15 @@ following functions.
 
     `?`
 """
-abstract type AbstractGP end
+abstract type AbstractGP{T <: Number} end
 
 export AbstractGP
 
+#--- Other submodules
+
+include("utils.jl")
+include("Metrics.jl")
+include("Kernels.jl")
+include("GaussianLikelihoods.jl")
 
 end # module
