@@ -13,6 +13,7 @@ mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     σn::T # additive noise (MVector so it remains mutable)
     x::Vector{SVector{NX, T}} # input data
     y::Matrix{T} # output data (rows are individual samples)
+    K::UpperTriangular{T, Matrix{T}} # Covariance matrix
     L::UpperTriangular{T, Matrix{T}} # Cholesky factors of the covariance matrix
     α::Matrix{T} # α = K⁻¹y
 
@@ -26,6 +27,7 @@ mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
                                            σn,
                                            Vector{SVector{NX, T}}(n), # x
                                            Matrix{T}(n, m), # y
+                                           UpperTriangular(Matrix{T}(n, n)), # K
                                            UpperTriangular(Matrix{T}(n, n)), # L = chol(K)
                                            Matrix{T}(n, m)) # α = K⁻¹y
         # Copy data to avoid unexpected problems in bad user code later
@@ -57,13 +59,14 @@ hyperparametercount(gp::GaussianLikelihood) = hyperparametercount(gp.kernel) + 1
 
 function update!(gp::GP)
     # Prior covariance using the specified kernel
-    covariance_matrix!(gp.L, gp.kernel, gp.x)
+    covariance_matrix!(gp.K, gp.kernel, gp.x)
     # Add measurement noise at each point
     n = length(gp.x)
     for i in 1:n+1:n*n
         gp.L[i] += gp.σn^2
     end
     # Calculate the Cholesky decomposition
+    copy!(gp.L, gp.K)
     cholfact!(Symmetric(gp.L)) # assumes L is upper triangular
     # Calculate quantities required for interpolation
     gp.α .= gp.y
@@ -130,5 +133,34 @@ function loglikelihood(gp::GaussianLikelihood)
     # The log likelihood
     lik = 0.5mean(sum(gp.y.*gp.α, 1)) + logdetK + 0.5n*log(2π)
 end
+
+function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
+    dθ = zeros(T, hyperparametercount(gp))
+    n = length(gp.x)
+    I = eye(T, n)
+    At_ldiv_B!(gp.L, I) # I = gp.L' \ eye(n)
+    A_ldiv_B!(gp.L, I) # I = gp.L \ (gp.L' \ eye(n))
+    #inner = (gp.α*gp.α' - gp.L \ (gp.L' \ eye(n)))'
+    for j in 1:n
+        for i in 1:j
+            K_dθ = covariance_dθ(gp.kernel, gp.x[i], gp.x[j], gp.K[i, j])
+            dθ .+= K_dθ .* (mean(gp.α[i, :] .* gp.α[j, :]) - I[i, j]) * ifelse(i == j, 0.5*one(T), one(T)) # use ifelse to avoid computing the symmetric counterparts
+        end
+    end
+    return dθ
+end
+
+#     inner = (alpha*alpha' - R \ (R' \ eye(n)))';
+#     logL_theta = zeros(size(par));
+#     logL_theta(1) = 0.5*sum(sum(inner.*K_sigma_n));
+#     logL_theta(2) = 0.5*sum(sum(inner.*K_sigma_f));
+#     l = par(3:end);
+#     if length(l) == 1
+#         logL_theta(3) = 0.5*sum(sum(inner.*K_l, 2));
+#     else
+#         for i = 1:length(l)
+#             logL_theta(i + 2) = 0.5*sum(sum(inner.*K_l(:, :, i)));
+#         end
+#     end
 
 end
