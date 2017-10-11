@@ -93,12 +93,12 @@ end
     x1 = [SVector(1.3, 2.2, 4.2), SVector(-0.2, 1.2, -0.1)]
     x2 = [SVector(-0.2, 2.3, 2.1)]
 
-    @test GPs.Covariance.covariance_matrix(sqrexp, x1, x2) ≈ [2.513805299e-08; 8.68673944e-08]
-    M1 = GPs.Covariance.covariance_matrix(sqrexp, x1)
+    @test GPs.Kernels.covariance_matrix(sqrexp, x1, x2) ≈ [2.513805299e-08; 8.68673944e-08]
+    M1 = GPs.Kernels.covariance_matrix(sqrexp, x1)
     @test M1 ≈ [0.015625 2.045012434e-21; 2.045012434e-21 0.015625]
 
     M2 = zeros(2, 2)
-    GPs.Covariance.covariance_matrix!(UpperTriangular(M2), sqrexp, x1)
+    GPs.Kernels.covariance_matrix!(UpperTriangular(M2), sqrexp, x1)
     M1[2, 1] = 0.0
     @test M1 == M2
 

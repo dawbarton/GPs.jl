@@ -11,7 +11,6 @@ using DocStringExtensions
 include("utils.jl")
 include("Metrics.jl")
 include("Kernels.jl")
-include("Covariance.jl")
 
 
 #--- Gaussian Processes
