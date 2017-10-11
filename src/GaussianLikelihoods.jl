@@ -75,6 +75,11 @@ end
 
 import Base: mean, var, cov
 
+"""
+$(SIGNATURES)
+
+Return the mean of the Gaussian Process at the specified points.
+"""
 function mean(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, x, gp.x)
     return Kₛ*gp.α
@@ -82,6 +87,11 @@ end
 
 mean(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
 
+"""
+$(SIGNATURES)
+
+Return the variance of the Gaussian Process at the specified points.
+"""
 function var(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, gp.x, x)
     v = gp.L' \ Kₛ
@@ -91,6 +101,11 @@ end
 
 var(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
 
+"""
+$(SIGNATURES)
+
+Return the covariance matrix of the Gaussian Process at the specified points.
+"""
 function cov(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, gp.x, x)
     v = gp.L' \ Kₛ
