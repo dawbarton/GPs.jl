@@ -53,7 +53,7 @@ export sqrdistance_dx2
 
 #--- Standard Euclidean metric
 
-mutable struct Euclidean{N, T} <: Metric{T}
+struct Euclidean{N, T} <: Metric{T}
     ℓ::MVector{N, T}
 end
 Euclidean(ℓ::Union{SVector, Number}) = Euclidean(MVector(ℓ))
