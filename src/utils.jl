@@ -42,7 +42,7 @@ $(SIGNATURES)
 
 Convert the input to a Matrix.
 """
-toMatrix(x::Vector{T}) where {T <: Number} = reinterpret(T, x, (1, length(x)))
+toMatrix(x::Vector{T}) where {T <: Number} = reshape(x, (1, length(x)))
 toMatrix(x::Vector{SVector{N, T}}) where {N, T <: Number} = reinterpret(T, x, (N, length(x)))
 toMatrix(x::Matrix{T}) where {T <: Number} = x
 

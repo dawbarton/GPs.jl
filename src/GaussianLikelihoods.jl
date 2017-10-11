@@ -7,7 +7,7 @@ using DocStringExtensions
 
 import ..GPs: sethyperparameters!, gethyperparameters, hyperparametercount
 
-mutable struct GaussianLikelihood{T, NX, K <: Kernel{T}} <: AbstractGP{T}
+mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     kernel::K # covariance function
     σn::T # additive noise (MVector so it remains mutable)
     x::Vector{SVector{NX, T}} # input data
@@ -17,16 +17,16 @@ mutable struct GaussianLikelihood{T, NX, K <: Kernel{T}} <: AbstractGP{T}
 
     function GaussianLikelihood(kernel::Kernel, σn::T, x::Vector{SVector{NX, T}}, y::Matrix{T}) where {NX, T <: Number}
         n = length(x) # number of samples
-        m = size(y, 2) # number of output dimension
-        if n != size(y, 1)
+        m = size(y, 1) # number of output dimensions
+        if n != size(y, 2)
             throw(DimensionMismatch("The number of samples in x and y must match (i.e. length(x) == size(y, 1))"))
         end
-        gp = new{typeof(k), NX, T}(kernel,
-                                   σn,
-                                   Vector{SVector{NX, T}}(n), # x
-                                   Matrix{T}(n, m), # y
-                                   UpperTriangular(Matrix{T}(n, n)), # L = chol(K)
-                                   Matrix{T}(n, m)) # α = K⁻¹y
+        gp = new{T, NX, m, typeof(kernel)}(kernel,
+                                           σn,
+                                           Vector{SVector{NX, T}}(n), # x
+                                           Matrix{T}(n, m), # y
+                                           UpperTriangular(Matrix{T}(n, n)), # L = chol(K)
+                                           Matrix{T}(n, m)) # α = K⁻¹y
         # Copy data to avoid unexpected problems in bad user code later
         gp.x .= x
         gp.y .= y' # assume we given samples as columns
@@ -56,7 +56,7 @@ hyperparametercount(gp::GaussianLikelihood) = hyperparametercount(gp.kernel) + 1
 
 function update!(gp::GP)
     # Prior covariance using the specified kernel
-    covariance!(gp.L, gp.k, gp.x)
+    covariance_matrix!(gp.L, gp.kernel, gp.x)
     # Add measurement noise at each point
     n = length(gp.x)
     for i in 1:n+1:n*n
@@ -82,10 +82,10 @@ Return the mean of the Gaussian Process at the specified points.
 """
 function mean(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, x, gp.x)
-    return Kₛ*gp.α
+    return At_mul_Bt(gp.α, Kₛ)
 end
 
-mean(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
+mean(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
 
 """
 $(SIGNATURES)
@@ -99,7 +99,7 @@ function var(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     return Kₛₛ - vec(sum(v.*v, 1)) + gp.σn^2
 end
 
-var(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
+var(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
 
 """
 $(SIGNATURES)
@@ -109,7 +109,7 @@ Return the covariance matrix of the Gaussian Process at the specified points.
 function cov(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛ = covariance_matrix(gp.kernel, gp.x, x)
     v = gp.L' \ Kₛ
-    Kₛₛ = covariance_metrix(gp.kernel, x)
+    Kₛₛ = covariance_matrix(gp.kernel, x)
     Kₚ = Kₛₛ - v'*v
     for i in diagind(Kₚ)
         Kₚ[i] += gp.σn^2
@@ -117,6 +117,6 @@ function cov(gp::GaussianLikelihood{T}, x::Vector{SVector{N, T}}) where {T, N}
     return Kₚ
 end
 
-cov(gp::GaussianLikelihood{T}, x::Union{Vector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
+cov(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
 
 end

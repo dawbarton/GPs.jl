@@ -4,6 +4,24 @@ using StaticArrays
 
 #--- Metric tests
 
+@testset "Utils tests" begin
+
+    for x in [toSVector([1, 2, 3]),
+              toSVector([SVector(1), SVector(2), SVector(3)]),
+              toSVector([1 2 3]),
+              toSVector(1:3)]
+        @test x == [SVector(1), SVector(2), SVector(3)]
+        @test isa(x, Vector{SVector{1, Int}})
+    end
+    for x in [toMatrix([1, 2, 3]),
+              toMatrix([SVector(1), SVector(2), SVector(3)]),
+              toMatrix([1 2 3])]
+        @test x == [1 2 3]
+        @test isa(x, Matrix)
+    end
+    
+end
+
 @testset "Metric tests" begin
 
     @testset "Isotropic Euclidean" begin
@@ -102,4 +120,50 @@ end
     M1[2, 1] = 0.0
     @test M1 == M2
 
+end
+
+@testset "Gaussian Process (Gaussian likelihood) tests" begin
+
+    n = 21
+    x = linspace(0, 1, n)
+    y = sin.(2π*x)
+
+    σn = 0.3
+    σf = 0.1
+    ℓ = 0.2
+
+    iso = GPs.Metrics.Euclidean(ℓ)
+    sqrexp = GPs.Kernels.SqrExponential(iso, σf)
+    gp = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, y)
+
+    # Calculate the mean between the training points
+    xx = 0.5*(x[2:end] + x[1:end-1])
+
+    # From Matlab GPML toolbox (ell = log(0.2), sf = log(0.1), lik_sn = log(0.3))
+    #   n = 21;
+    #   x = linspace(0, 1, n);
+    #   y = sin(x);
+    #   xx = 0.5*(x(2:end) + x(1:end-1))
+    #   meanfunc = [];                    % empty: don't use a mean function
+    #   covfunc = @covSEiso;              % Squared Exponental covariance function
+    #   likfunc = @likGauss;              % Gaussian likelihood
+    #   hyp = struct('mean', [], 'cov', [log(0.2) log(0.1)], 'lik', log(0.1));
+    #   [mu s2] = gp(hyp, @infGaussLik, meanfunc, covfunc, likfunc, x, y, xx);
+
+    μ₀ = [0.202764557432603 0.2532874969517 0.298316602533046 0.330784847496406 0.34404680063947 0.333129086919798 0.295761669144916 0.232966591637241 0.149093996664424 0.0513161114615125 -0.0513161114615124 -0.149093996664424 -0.232966591637241 -0.295761669144916 -0.333129086919798 -0.34404680063947 -0.330784847496406 -0.298316602533047 -0.2532874969517 -0.202764557432603]
+    σ₀² = [0.0968914136106435,0.0964262935050147,0.0961104866357293,0.0959299264929463,0.0958451743017393,0.0958140514271935,0.0958060359999692,0.0958050354333621,0.0958051126669153,0.0958050947257113,0.0958050947257113,0.0958051126669153,0.0958050354333621,0.0958060359999692,0.0958140514271935,0.0958451743017393,0.0959299264929463,0.0961104866357293,0.0964262935050147,0.0968914136106435]
+
+    μ = mean(gp, xx)
+    @test μ ≈ μ₀
+    σ² = var(gp, xx)
+    @test σ² ≈ σ₀²
+    K = cov(gp, xx)
+    @test diag(K) ≈ σ₀²
+
+    # Test multiple outputs
+    gp2 = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, [y y]')
+
+    μ2 = mean(gp2, xx)
+    @test μ2[1, :] == μ2[2, :]
+    @test μ2[1:1, :] ≈ μ₀
 end
