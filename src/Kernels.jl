@@ -146,35 +146,35 @@ end
 
 export SqrExponential
 
-function covariance(kernel::SqrExponential, x1, x2)
+function covariance(kernel::SqrExponential{T}, x1, x2) where {T}
     s² = sqrdistance(kernel.metric, x1, x2)
-    return kernel.σf^2*exp(-0.5*s²)
+    return kernel.σf^2*exp(-T(0.5)*s²)
 end
 
-function covariance_dθ(kernel::SqrExponential, x1, x2)
+function covariance_dθ(kernel::SqrExponential{T}, x1, x2) where {T}
     # cov is the previously computed covariance
     cov = covariance(kernel, x1, x2)
     ds²dθ = sqrdistance_dθ(kernel.metric, x1, x2)
     # Derivative w.r.t. metric hyperparameters (chain rule)
-    dcov_dθ = -0.5*ds²dθ*cov
+    dcov_dθ = -T(0.5)*ds²dθ*cov
     # Derivative w.r.t. noise parameter (uses SVector for speed)
     dcov_dσf = SVector(2*cov/kernel.σf)
     # Return concatenated array
     return [dcov_dσf; dcov_dθ]
 end
 
-function covariance_dx1(kernel::SqrExponential, x1, x2)
+function covariance_dx1(kernel::SqrExponential{T}, x1, x2) where {T}
     # cov is the previously computed covariance
     ds²dx = sqrdistance_dx1(kernel.metric, x1, x2)
     # Derivative w.r.t. x1 (chain rule)
-    return -0.5*ds²dx*covariance(kernel, x1, x2)
+    return -T(0.5)*ds²dx*covariance(kernel, x1, x2)
 end
 
-function covariance_dx2(kernel::SqrExponential, x1, x2)
+function covariance_dx2(kernel::SqrExponential{T}, x1, x2) where {T}
     # cov is the previously computed covariance
     ds²dy = sqrdistance_dx2(kernel.metric, x1, x2)
     # Derivative w.r.t. x2 (chain rule)
-    return -0.5*ds²dy*covariance(kernel, x1, x2)
+    return -T(0.5)*ds²dy*covariance(kernel, x1, x2)
 end
 
 function sethyperparameters!(kernel::SqrExponential, θ)

@@ -125,13 +125,13 @@ cov(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T}
 
 #--- Likelihoods
 
-function loglikelihood(gp::GaussianLikelihood)
+function loglikelihood(gp::GaussianLikelihood{T}) where {T}
     # log likelihood of the GP itself (w.r.t. the hyperparameters)
     n = length(gp.x)
     # log(det(K))
     logdetK = sum(log.(diag(gp.L)))
     # The log likelihood
-    lik = 0.5mean(sum(gp.y.*gp.α, 1)) + logdetK + 0.5n*log(2π)
+    lik = T(0.5)*mean(sum(gp.y.*gp.α, 1)) + logdetK + T(0.5)*n*log(T(2)*π)
 end
 
 function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
@@ -151,18 +151,5 @@ function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
     end
     return dθ
 end
-
-#     inner = (alpha*alpha' - R \ (R' \ eye(n)))';
-#     logL_theta = zeros(size(par));
-#     logL_theta(1) = 0.5*sum(sum(inner.*K_sigma_n));
-#     logL_theta(2) = 0.5*sum(sum(inner.*K_sigma_f));
-#     l = par(3:end);
-#     if length(l) == 1
-#         logL_theta(3) = 0.5*sum(sum(inner.*K_l, 2));
-#     else
-#         for i = 1:length(l)
-#             logL_theta(i + 2) = 0.5*sum(sum(inner.*K_l(:, :, i)));
-#         end
-#     end
 
 end

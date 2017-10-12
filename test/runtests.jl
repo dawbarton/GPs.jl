@@ -183,4 +183,30 @@ end
     @test round(loglikelihood(GP(sqrexp, σn, x, y)), 2) ≈ round(mean([136.272815830685, 132.426903505274]), 2)
 
     @test loglikelihood_dθ(GP(sqrexp, σn, x, y)) ≈ [-1452.713883, -1531.4908, 306.8887837]
+
+    # Test number type propogation
+    n = 21
+    x = convert(Vector{Float32}, linspace(0, 1, n))
+    y = sin.(Float32(2)*π*x)
+
+    σn = Float32(0.3)
+    σf = Float32(0.1)
+    ℓ = Float32(0.2)
+
+    iso = GPs.Metrics.Euclidean(ℓ)
+    sqrexp = GPs.Kernels.SqrExponential(iso, σf)
+    gp = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, y)
+
+    # Calculate the mean between the training points
+    xx = Float32(0.5)*(x[2:end] + x[1:end-1])
+
+    μ = mean(gp, xx)
+    @test isa(μ, Matrix{Float32})
+    σ² = var(gp, xx)
+    @test isa(σ², Vector{Float32})
+    K = cov(gp, xx)
+    @test isa(K, Matrix{Float32})
+    L = loglikelihood(gp)
+    @test isa(L, Float32)
+
 end
