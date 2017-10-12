@@ -11,9 +11,9 @@ An abstract kernel type. Every child type should implement the following
 functions.
 
     `covariance(kernel, x1, x2)`
-    `covariance_dθ(kernel, x1, x2, value)`
-    `covariance_dx1(kernel, x1, x2, value)`
-    `covariance_dx2(kernel, x1, x2, value)`
+    `covariance_dθ(kernel, x1, x2)`
+    `covariance_dx1(kernel, x1, x2)`
+    `covariance_dx2(kernel, x1, x2)`
     `sethyperparameters!(kernel, θ)`
     `gethyperparameters(kernel)`
     `hyperparametercount(kernel)`
@@ -30,27 +30,24 @@ function covariance end
 export covariance
 
 """
-`covariance_dθ(kernel, x1, x2, cov)` returns the derivative w.r.t. the
+`covariance_dθ(kernel, x1, x2)` returns the derivative w.r.t. the
 hyperparameters of the corresponding covariance kernel evaluated at `(x1, x2)`.
-The parameter `cov` is the previously computed covariance value.
 """
 function covariance_dθ end
 
 export covariance_dθ
 
 """
-`covariance_dx1(kernel, x1, x2, cov)` returns the derivative w.r.t. x1 of the
-corresponding covariance kernel evaluated at `(x1, x2)`. The parameter `cov` is
-the previously computed covariance value.
+`covariance_dx1(kernel, x1, x2)` returns the derivative w.r.t. x1 of the
+corresponding covariance kernel evaluated at `(x1, x2)`.
 """
 function covariance_dx end
 
 export covariance_dy
 
 """
-`covariance_dx2(kernel, x1, x2, cov)` returns the derivative w.r.t. x2 of the
-corresponding covariance kernel evaluated at `(x1, x2)`. The parameter `cov` is
-the previously computed covariance value.
+`covariance_dx2(kernel, x1, x2)` returns the derivative w.r.t. x2 of the
+corresponding covariance kernel evaluated at `(x1, x2)`.
 """
 function covariance_dy end
 
@@ -154,8 +151,9 @@ function covariance(kernel::SqrExponential, x1, x2)
     return kernel.σf^2*exp(-0.5*s²)
 end
 
-function covariance_dθ(kernel::SqrExponential, x1, x2, cov)
+function covariance_dθ(kernel::SqrExponential, x1, x2)
     # cov is the previously computed covariance
+    cov = covariance(kernel, x1, x2)
     ds²dθ = sqrdistance_dθ(kernel.metric, x1, x2)
     # Derivative w.r.t. metric hyperparameters (chain rule)
     dcov_dθ = -0.5*ds²dθ*cov
@@ -165,18 +163,18 @@ function covariance_dθ(kernel::SqrExponential, x1, x2, cov)
     return [dcov_dσf; dcov_dθ]
 end
 
-function covariance_dx1(kernel::SqrExponential, x1, x2, cov)
+function covariance_dx1(kernel::SqrExponential, x1, x2)
     # cov is the previously computed covariance
     ds²dx = sqrdistance_dx1(kernel.metric, x1, x2)
     # Derivative w.r.t. x1 (chain rule)
-    return -0.5*ds²dx*cov
+    return -0.5*ds²dx*covariance(kernel, x1, x2)
 end
 
-function covariance_dx2(kernel::SqrExponential, x1, x2, cov)
+function covariance_dx2(kernel::SqrExponential, x1, x2)
     # cov is the previously computed covariance
     ds²dy = sqrdistance_dx2(kernel.metric, x1, x2)
     # Derivative w.r.t. x2 (chain rule)
-    return -0.5*ds²dy*cov
+    return -0.5*ds²dy*covariance(kernel, x1, x2)
 end
 
 function sethyperparameters!(kernel::SqrExponential, θ)

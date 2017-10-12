@@ -6,7 +6,7 @@ using StaticArrays
 using DocStringExtensions
 
 import ..GPs: sethyperparameters!, gethyperparameters, hyperparametercount,
-    optimizehyperparameters!, loglikelihood
+    optimizehyperparameters!, loglikelihood, loglikelihood_dθ
 
 mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     kernel::K # covariance function
@@ -63,7 +63,7 @@ function update!(gp::GP)
     # Add measurement noise at each point
     n = length(gp.x)
     for i in 1:n+1:n*n
-        gp.L[i] += gp.σn^2
+        gp.K[i] += gp.σn^2
     end
     # Calculate the Cholesky decomposition
     copy!(gp.L, gp.K)
@@ -135,16 +135,18 @@ function loglikelihood(gp::GaussianLikelihood)
 end
 
 function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
-    dθ = zeros(T, hyperparametercount(gp))
     n = length(gp.x)
     I = eye(T, n)
     At_ldiv_B!(gp.L, I) # I = gp.L' \ eye(n)
     A_ldiv_B!(gp.L, I) # I = gp.L \ (gp.L' \ eye(n))
     #inner = (gp.α*gp.α' - gp.L \ (gp.L' \ eye(n)))'
+    dθ = zeros(T, hyperparametercount(gp))
+    Kdθ = @view dθ[2:end]
     for j in 1:n
         for i in 1:j
-            K_dθ = covariance_dθ(gp.kernel, gp.x[i], gp.x[j], gp.K[i, j])
-            dθ .+= K_dθ .* (mean(gp.α[i, :] .* gp.α[j, :]) - I[i, j]) * ifelse(i == j, 0.5*one(T), one(T)) # use ifelse to avoid computing the symmetric counterparts
+            mult = (mean(gp.α[i, :] .* gp.α[j, :]) - I[i, j]) * ifelse(i == j, T(0.5), T(1)) # use ifelse to avoid computing the symmetric counterparts
+            Kdθ .-= covariance_dθ(gp.kernel, gp.x[i], gp.x[j]) .* mult
+            dθ[1] -= ifelse(i == j, T(2) * gp.σn * mult, zero(T))
         end
     end
     return dθ

@@ -85,13 +85,13 @@ end
         covar = GPs.Kernels.covariance(sqrexp, x1, x2)
         @test covar ≈ 2.5138053e-08
 
-        ans1 = GPs.Kernels.covariance_dθ(sqrexp, x1, x2, covar)
+        ans1 = GPs.Kernels.covariance_dθ(sqrexp, x1, x2)
         @test ans1 ≈ [4.022088479e-07, 1.341366507e-06]
         @test isa(ans1, SVector)
-        ans2 = GPs.Kernels.covariance_dx1(sqrexp, x1, x2, covar)
+        ans2 = GPs.Kernels.covariance_dx1(sqrexp, x1, x2)
         @test ans2 ≈ [-1.508283182e-07, 1.005522113e-08, -2.111596459e-07]
         @test isa(ans2, SVector)
-        ans3 = GPs.Kernels.covariance_dx2(sqrexp, x1, x2, covar)
+        ans3 = GPs.Kernels.covariance_dx2(sqrexp, x1, x2)
         @test ans3 ≈ [1.508283182e-07, -1.005522113e-08, 2.111596459e-07]
 
         @test GPs.hyperparametercount(sqrexp) == 2
@@ -182,4 +182,5 @@ end
     @test round(loglikelihood(GP(sqrexp, σn, x, y[2, :])), 2) ≈ round(132.426903505274, 2)
     @test round(loglikelihood(GP(sqrexp, σn, x, y)), 2) ≈ round(mean([136.272815830685, 132.426903505274]), 2)
 
+    @test loglikelihood_dθ(GP(sqrexp, σn, x, y)) ≈ [-1452.713883, -1531.4908, 306.8887837]
 end

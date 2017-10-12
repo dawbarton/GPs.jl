@@ -24,12 +24,36 @@ end
 function optimizehyperparameters!
 end
 
+"""
+`loglikelihood(gp)`
+
+Return the negative log likelihood for a GP. Used in optimizing the
+hyperparameters.
+
+`loglikelihood(gp, x, y)`
+
+Return the negative log likelihood of an observation given a GP.
+
+"""
 function loglikelihood
 end
 
+"""
+Return the derivative of the negative log likelihood with respect to the
+hyperparameters.
+"""
+function loglikelihood_dθ
+end
+
+"""
+Return the derivative of the negative log likelihood with respect to the
+sample positions.
+"""
+function loglikelihood_dx
+end
 
 export sethyperparameters!, gethyperparameters, hyperparametercount,
-    optimizehyperparameters!, loglikelihood
+    optimizehyperparameters!, loglikelihood, loglikelihood_dθ, loglikelihood_dx
 
 #--- Data conversion routines
 
