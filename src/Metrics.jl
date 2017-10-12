@@ -67,7 +67,7 @@ function sqrdistance_dθ(metric::Euclidean{1, T} where {T}, x1, x2)
 end
 
 function sqrdistance_dθ(metric::Euclidean{N, T} where {N, T}, x1, x2)
-    return -2(x1 .- x2).^2./metric.ℓ.^3
+    return -2*(x1 .- x2).^2./metric.ℓ.^3
 end
 
 function sqrdistance_dx1(metric::Euclidean, x1, x2)
