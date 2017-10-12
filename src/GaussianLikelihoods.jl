@@ -39,7 +39,7 @@ mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     end
 end
 
-GaussianLikelihood(kernel::Kernel{T}, σn::T, x, y) where {T} = GaussianLikelihood(kernel, σn, toSVector(x), toMatrix(y))
+GaussianLikelihood(kernel::Kernel{T}, σn::T, x, y) where {T} = GaussianLikelihood(kernel, σn, toSVector(x)::Vector{SVector{NX, T}} where {NX}, toMatrix(y)::Matrix{T})
 
 const GP = GaussianLikelihood
 
