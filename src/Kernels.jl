@@ -139,7 +139,7 @@ where ``d(x_1, x_2)`` is an appropriate squared distance metric.
     `T <: Number`: the base number type used (can be inferred from σf).
 
 """
-mutable struct SqrExponential{M <: Metric, T <: Number} <: Kernel{T}
+mutable struct SqrExponential{T <: Number, M <: Metric{T}} <: Kernel{T}
     metric::M
     σf::T
 end
