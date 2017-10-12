@@ -4,9 +4,10 @@ using ..GPs
 using ..Kernels
 using StaticArrays
 using DocStringExtensions
+using Optim
 
 import ..GPs: sethyperparameters!, gethyperparameters, hyperparametercount,
-    optimizehyperparameters!, loglikelihood, loglikelihood_dθ
+    optimizehyperparameters!, loglikelihood, loglikelihood_dθ, loglikelihood_dθ!
 
 mutable struct GaussianLikelihood{T, NX, NY, K <: Kernel{T}} <: AbstractGP{T}
     kernel::K # covariance function
@@ -53,7 +54,7 @@ function sethyperparameters!(gp::GaussianLikelihood, θ)
     update!(gp)
 end
 
-gethyperparameters(gp::GaussianLikelihood) = [gp.σn[1]; gethyperparameters(gp.kernel)]
+gethyperparameters(gp::GaussianLikelihood) = [SVector(gp.σn[1]); gethyperparameters(gp.kernel)]
 
 hyperparametercount(gp::GaussianLikelihood) = hyperparametercount(gp.kernel) + 1
 
@@ -134,13 +135,12 @@ function loglikelihood(gp::GaussianLikelihood{T}) where {T}
     lik = T(0.5)*mean(sum(gp.y.*gp.α, 1)) + logdetK + T(0.5)*n*log(T(2)*π)
 end
 
-function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
+function loglikelihood_dθ!(dθ::AbstractVector{T}, gp::GaussianLikelihood{T}) where {T}
     n = length(gp.x)
     I = eye(T, n)
     At_ldiv_B!(gp.L, I) # I = gp.L' \ eye(n)
     A_ldiv_B!(gp.L, I) # I = gp.L \ (gp.L' \ eye(n))
     #inner = (gp.α*gp.α' - gp.L \ (gp.L' \ eye(n)))'
-    dθ = zeros(T, hyperparametercount(gp))
     Kdθ = @view dθ[2:end]
     for j in 1:n
         for i in 1:j
@@ -150,6 +150,17 @@ function loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T}
         end
     end
     return dθ
+end
+
+loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T} = loglikelihood_dθ!(zeros(T, hyperparametercount(gp)), gp)
+
+#--- Optimization
+function optimizehyperparameters!(gp, solver = LBFGS(), options = Optim.Options())
+    f = θ -> (θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood(gp))
+    g! = (dθ, θ) -> (θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood_dθ!(dθ, gp))
+
+    θ₀ = Vector(gethyperparameters(gp))
+    opt = optimize(f, g!, θ₀, solver, options)
 end
 
 end

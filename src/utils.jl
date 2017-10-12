@@ -21,6 +21,9 @@ Return the number of hyperparameters an object has.
 function hyperparametercount
 end
 
+"""
+Optimize the hyperparameters of a GP using Optim.jl.
+"""
 function optimizehyperparameters!
 end
 
@@ -47,13 +50,28 @@ end
 
 """
 Return the derivative of the negative log likelihood with respect to the
+hyperparameters inplace.
+"""
+function loglikelihood_dθ!
+end
+
+"""
+Return the derivative of the negative log likelihood with respect to the
 sample positions.
 """
 function loglikelihood_dx
 end
 
+"""
+Return the derivative of the negative log likelihood with respect to the
+sample positions inplace.
+"""
+function loglikelihood_dx!
+end
+
 export sethyperparameters!, gethyperparameters, hyperparametercount,
-    optimizehyperparameters!, loglikelihood, loglikelihood_dθ, loglikelihood_dx
+    optimizehyperparameters!, loglikelihood, loglikelihood_dθ,
+    loglikelihood_dθ!, loglikelihood_dx, loglikelihood_dx!
 
 #--- Data conversion routines
 

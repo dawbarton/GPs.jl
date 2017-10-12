@@ -136,6 +136,8 @@ end
     sqrexp = GPs.Kernels.SqrExponential(iso, σf)
     gp = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, y)
 
+    @test isa(gethyperparameters(gp), SVector{3, Float64})
+
     # Calculate the mean between the training points
     xx = 0.5*(x[2:end] + x[1:end-1])
 
