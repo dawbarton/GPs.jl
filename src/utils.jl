@@ -16,7 +16,7 @@ function gethyperparameters
 end
 
 """
-Return the number of hyper parameters an object has.
+Return the number of hyperparameters an object has.
 """
 function hyperparametercount
 end
