@@ -154,25 +154,5 @@ end
 
 loglikelihood_dθ(gp::GaussianLikelihood{T}) where {T} = loglikelihood_dθ!(zeros(T, hyperparametercount(gp)), gp)
 
-#--- Optimization
-
-function optimizehyperparameters!(gp, solver = LBFGS(), options = Optim.Options())
-    # Define objective functions with exponential scalings on the
-    # hyperparameters as that seems to work best
-    f = ϕ -> (θ = exp.(ϕ) ; θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood(gp))
-    g! = (dϕ, ϕ) -> (θ = exp.(ϕ) ; println("ϕ: $(ϕ), θ: $(θ)") ; θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood_dθ!(dϕ, gp) ; dϕ .*= θ)
-
-    θ₀ = Vector(gethyperparameters(gp))
-    res = optimize(f, g!, log.(θ₀), solver, options)
-    if Optim.converged(res)
-        ϕ = Optim.minimizer(res)
-        θ₀ .= exp.(ϕ)
-        θ₀ != gethyperparameters(gp) ? sethyperparameters!(gp, θ₀) : nothing
-        return true
-    else
-        sethyperparameters!(gp, θ₀)
-        return false
-    end
-end
 
 end

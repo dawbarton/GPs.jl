@@ -1,6 +1,18 @@
 using StaticArrays
 using DocStringExtensions
 
+#--- Gaussian Processes
+
+"""
+An abstract Gaussian Process type. Every child type should implement the
+following functions.
+
+    `?`
+"""
+abstract type AbstractGP{T <: Number} end
+
+export AbstractGP
+
 #--- Generic functions used by multiple types
 
 """
@@ -97,3 +109,24 @@ toMatrix(x::Vector{SVector{N, T}}) where {N, T <: Number} = reinterpret(T, x, (N
 toMatrix(x::Matrix{T}) where {T <: Number} = x
 
 export toMatrix
+
+#--- Optimization
+
+function optimizehyperparameters!(gp, solver = LBFGS(), options = Optim.Options())
+    # Define objective functions with exponential scalings on the
+    # hyperparameters as that seems to work best
+    f = ϕ -> (θ = exp.(ϕ) ; θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood(gp))
+    g! = (dϕ, ϕ) -> (θ = exp.(ϕ) ; println("ϕ: $(ϕ), θ: $(θ)") ; θ != gethyperparameters(gp) ? sethyperparameters!(gp, θ) : nothing ; loglikelihood_dθ!(dϕ, gp) ; dϕ .*= θ)
+
+    θ₀ = Vector(gethyperparameters(gp))
+    res = optimize(f, g!, log.(θ₀), solver, options)
+    if Optim.converged(res)
+        ϕ = Optim.minimizer(res)
+        θ₀ .= exp.(ϕ)
+        θ₀ != gethyperparameters(gp) ? sethyperparameters!(gp, θ₀) : nothing
+        return true
+    else
+        sethyperparameters!(gp, θ₀)
+        return false
+    end
+end
