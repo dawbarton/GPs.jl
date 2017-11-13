@@ -53,6 +53,12 @@ export sqrdistance_dx2
 
 #--- Standard Euclidean metric
 
+"""
+Euclidean{N, T}
+
+The standard Euclidean metric in `N` dimensions. (Note that `N=1` corresponds to
+an isotropic metric when the input data is multi-dimensional.)
+"""
 struct Euclidean{N, T} <: Metric{T}
     ℓ::MVector{N, T}
 end
