@@ -1,5 +1,6 @@
 using StaticArrays
 using DocStringExtensions
+using Optim
 
 #--- Gaussian Processes
 
