@@ -11,6 +11,7 @@ include("general.jl")
 
 include("Metrics.jl")
 include("Kernels.jl")
+include("DataSets.jl")
 include("GaussianLikelihoods.jl")
 
 end # module

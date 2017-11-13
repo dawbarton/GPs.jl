@@ -56,8 +56,8 @@ function update!(gp::GP)
     copy!(gp.L, gp.K)
     cholfact!(Symmetric(gp.L)) # assumes L is upper triangular
     # Calculate quantities required for interpolation
-    gp.α .= gp.ym'
-    A_ldiv_B!(gp.L', gp.α) # L' \ y (intermediate)
+    gp.α .= gp.training.ym'
+    At_ldiv_B!(gp.L, gp.α) # L' \ y (intermediate)
     A_ldiv_B!(gp.L, gp.α) # α = L \ (L' \ y)
     return gp
 end
@@ -76,7 +76,7 @@ function mean(gp::GP{T}, x::Vector{SVector{N, T}}) where {T, N}
     return At_mul_Bt(gp.α, Kₛ) # (Kₛ*α)ᵀ
 end
 
-mean(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
+mean(gp::GP{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = mean(gp, toSVector(x))
 
 """
 $(SIGNATURES)
@@ -90,7 +90,7 @@ function var(gp::GP{T}, x::Vector{SVector{N, T}}) where {T, N}
     return Kₛₛ - vec(sum(v.*v, 1)) + gp.σn[1]^2
 end
 
-var(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
+var(gp::GP{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = var(gp, toSVector(x))
 
 """
 $(SIGNATURES)
@@ -103,26 +103,26 @@ function cov(gp::GP{T}, x::Vector{SVector{N, T}}) where {T, N}
     Kₛₛ = covariance_matrix(gp.kernel, x)
     Kₚ = Kₛₛ - v'*v
     for i ∈ diagind(Kₚ)
-        Kₚ[i] += gp.σn^2
+        Kₚ[i] += gp.σn[1]^2
     end
     return Kₚ
 end
 
-cov(gp::GaussianLikelihood{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
+cov(gp::GP{T}, x::Union{AbstractVector{T}, Matrix{T}}) where {T} = cov(gp, toSVector(x))
 
 #--- Likelihoods
 
 function loglikelihood(gp::GP{T}) where {T}
     # log likelihood of the GP itself (w.r.t. the hyperparameters)
-    n = length(gp.training.x)
+    n = samplecount(gp.training)
     # log(det(K))
     logdetK = sum(log.(diag(gp.L)))
     # The log likelihood
-    lik = T(0.5)*mean(sum(gp.y.*gp.α, 1)) + logdetK + T(0.5)*n*log(T(2)*π)
+    lik = T(0.5)*mean(sum(gp.training.ym'.*gp.α, 1)) + logdetK + T(0.5)*n*log(T(2)*π)
 end
 
 function loglikelihood_dθ!(dθ::AbstractVector{T}, gp::GP{T}) where {T}
-    n = length(gp.x)
+    n = samplecount(gp.training)
     I = eye(T, n)
     At_ldiv_B!(gp.L, I) # I = gp.L' \ eye(n)
     A_ldiv_B!(gp.L, I) # I = gp.L \ (gp.L' \ eye(n))
@@ -131,8 +131,8 @@ function loglikelihood_dθ!(dθ::AbstractVector{T}, gp::GP{T}) where {T}
     for j ∈ 1:n
         for i ∈ 1:j
             mult = (mean(gp.α[i, :] .* gp.α[j, :]) - I[i, j]) * ifelse(i == j, T(0.5), T(1)) # use ifelse to avoid computing the symmetric counterparts
-            Kdθ .-= covariance_dθ(gp.kernel, gp.x[i], gp.x[j]) .* mult
-            dθ[1] -= ifelse(i == j, T(2) * gp.σn * mult, zero(T))
+            Kdθ .-= covariance_dθ(gp.kernel, gp.training.x[i], gp.training.x[j]) .* mult
+            dθ[1] -= ifelse(i == j, T(2) * gp.σn[1] * mult, zero(T))
         end
     end
     return dθ

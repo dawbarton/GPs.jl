@@ -134,7 +134,8 @@ end
 
     iso = GPs.Metrics.Euclidean(ℓ)
     sqrexp = GPs.Kernels.SqrExponential(iso, σf)
-    gp = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, y)
+    training = GPs.DataSets.TrainingSet(x, y)
+    gp = GPs.GaussianLikelihoods.GP(sqrexp, σn, training)
 
     @test isa(gethyperparameters(gp), SVector{3, Float64})
 
@@ -163,7 +164,8 @@ end
     @test diag(K) ≈ σ₀²
 
     # Test multiple outputs
-    gp2 = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, [y y]')
+    training2 = GPs.DataSets.TrainingSet(x, [y y]')
+    gp2 = GPs.GaussianLikelihoods.GP(sqrexp, σn, training2)
 
     μ2 = mean(gp2, xx)
     @test μ2[1, :] == μ2[2, :]
@@ -178,13 +180,16 @@ end
 
     iso = GPs.Metrics.Euclidean(ℓ)
     sqrexp = GPs.Kernels.SqrExponential(iso, σf)
-    GP = GPs.GaussianLikelihoods.GaussianLikelihood
+    GP = GPs.GaussianLikelihoods.GP
+    trainingy = GPs.DataSets.TrainingSet(x, y)
+    trainingy1 = GPs.DataSets.TrainingSet(x, y[1, :])
+    trainingy2 = GPs.DataSets.TrainingSet(x, y[2, :])
 
-    @test round(loglikelihood(GP(sqrexp, σn, x, y[1, :])), 2) ≈ round(136.272815830685, 2)
-    @test round(loglikelihood(GP(sqrexp, σn, x, y[2, :])), 2) ≈ round(132.426903505274, 2)
-    @test round(loglikelihood(GP(sqrexp, σn, x, y)), 2) ≈ round(mean([136.272815830685, 132.426903505274]), 2)
+    @test round(loglikelihood(GP(sqrexp, σn, trainingy1)), 2) ≈ round(136.272815830685, 2)
+    @test round(loglikelihood(GP(sqrexp, σn, trainingy2)), 2) ≈ round(132.426903505274, 2)
+    @test round(loglikelihood(GP(sqrexp, σn, trainingy)), 2) ≈ round(mean([136.272815830685, 132.426903505274]), 2)
 
-    @test loglikelihood_dθ(GP(sqrexp, σn, x, y)) ≈ [-1452.713883, -1531.4908, 306.8887837]
+    @test loglikelihood_dθ(GP(sqrexp, σn, trainingy)) ≈ [-1452.713883, -1531.4908, 306.8887837]
 
     # Test number type propogation
     n = 21
@@ -197,7 +202,8 @@ end
 
     iso = GPs.Metrics.Euclidean(ℓ)
     sqrexp = GPs.Kernels.SqrExponential(iso, σf)
-    gp = GPs.GaussianLikelihoods.GaussianLikelihood(sqrexp, σn, x, y)
+    training = GPs.DataSets.TrainingSet(x, y)
+    gp = GPs.GaussianLikelihoods.GP(sqrexp, σn, training)
 
     # Calculate the mean between the training points
     xx = Float32(0.5)*(x[2:end] + x[1:end-1])
