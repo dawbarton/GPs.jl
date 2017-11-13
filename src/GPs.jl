@@ -14,4 +14,11 @@ include("Kernels.jl")
 include("DataSets.jl")
 include("GaussianLikelihoods.jl")
 
+using Metrics
+using Kernels
+using DataSets
+using GaussianLikelihoods
+
+export GP, TrainingSet, SqrExponential, Euclidean
+
 end # module
