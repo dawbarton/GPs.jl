@@ -30,8 +30,8 @@ struct TrainingSet{NX, NY, T}
         if size(x, 2) != size(y, 2)
             throw(ArgumentError("x and y must have the same number of columns"))
         end
-        new{size(x, 1), size(y, 1), T}(reinterpret(MVector{size(x, 1), T}, x, (size(x, 2),)),
-                                       reinterpret(MVector{size(y, 1), T}, y, (size(y, 2),)),
+        new{size(x, 1), size(y, 1), T}(reinterpret(SVector{size(x, 1), T}, x, (size(x, 2),)),
+                                       reinterpret(SVector{size(y, 1), T}, y, (size(y, 2),)),
                                        x,
                                        y)
     end
